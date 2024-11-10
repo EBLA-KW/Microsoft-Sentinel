@@ -1,0 +1,7 @@
+SecurityEvent
+| where EventID == 4104  // PowerShell script block logging
+| where EventData contains "Invoke-Mimikatz" 
+    or EventData contains "EncodedCommand" 
+    or EventData contains "DownloadFile" 
+    or EventData contains "Invoke-WebRequest"
+| summarize Count = count() by Account, Computer, EventData, bin(TimeGenerated, 1h)
