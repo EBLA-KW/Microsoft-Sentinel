@@ -1,0 +1,9 @@
+SecurityEvent
+| where EventID == 4672  // Event for "Special privileges assigned to new logon" in Windows
+| where not(Account in ("known_admin_account1", "known_service_account"))  // Exclude known accounts
+| where PrivilegeList contains "SeDebugPrivilege" or PrivilegeList contains "SeTcbPrivilege"  // Focus on suspicious privileges
+// | where not(Computer in ("DC", "SQLDB", "BoiStart", "Dev-SQL", "CMMP", "known_trusted_server1", "known_trusted_server2"))  // Exclude known computers
+| extend PrivilegeEscalation = iff(AccountType == "User" and PrivilegeList contains "SeDebugPrivilege", "Suspicious", "Normal")
+| where PrivilegeEscalation == "Suspicious"
+| where toint(format_datetime(TimeGenerated, "HH")) < 9 or toint(format_datetime(TimeGenerated, "HH")) >= 17  // Filter for events outside working hours (before 9 AM and after 5 PM)
+| summarize Count = count() by Account, Computer, bin(TimeGenerated, 6h)
