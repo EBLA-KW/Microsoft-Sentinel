@@ -1,0 +1,8 @@
+CommonSecurityLog
+| where DeviceVendor == "Fortinet"
+| where DeviceProduct == "Fortigate"
+| where Activity contains "vpn success"
+| extend LoginHour = datetime_part('hour', TimeGenerated + 3h)  // Adjusting for Kuwait Time (UTC+3)
+| where LoginHour < 8 or LoginHour > 17
+| project TimeGenerated, LoginHour, Activity, DestinationIP, SourceIP
+| order by LoginHour asc  // Sort by LoginHour in ascending order
