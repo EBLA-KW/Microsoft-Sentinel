@@ -1,6 +1,15 @@
 CommonSecurityLog
 | where DeviceVendor == "Fortinet"
 | where DeviceProduct == "Fortigate"
-| where Activity contains "vpn failure"
-| summarize FailureCount = count() by SourceIP, DestinationIP, Message, DeviceAction,  bin(TimeGenerated, 5m)
-| where FailureCount > 5
+| where Activity contains "vpn success"
+| extend LoginHour = datetime_part('hour', TimeGenerated + 3h)  // Adjusting for Kuwait Time (UTC+3)
+| where LoginHour < 8 or LoginHour > 17
+| summarize 
+    FirstLogin = min(TimeGenerated),  // Earliest login time
+    LastLogin = max(TimeGenerated),   // Most recent login time
+    TotalLogins = count(),            // Total successful logins
+    Destinations = make_set(DestinationIP),  // Unique destination IPs
+    LoginHours = make_set(LoginHour)         // Unique login hours
+    by SourceIP
+| project SourceIP, FirstLogin, LastLogin, TotalLogins, Destinations, LoginHours
+| order by FirstLogin asc
