@@ -1,0 +1,5 @@
+SecurityEvent
+  | where EventID == 4688
+  | where Process has_any ("cmd.exe", "powershell.exe", "PowerShell_ISE.exe")
+  | where CommandLine hassuffix "powercat.ps1"
+  | extend timestamp = TimeGenerated, AccountCustomEntity = Account, HostCustomEntity = Computer
