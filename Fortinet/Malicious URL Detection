@@ -1,0 +1,11 @@
+CommonSecurityLog
+| where DeviceVendor contains "Fortinet"
+| where Activity contains "malicious-url"
+| summarize 
+    MaliciousURLCount = count(),                     // Total count of malicious URL activities
+    UniqueDestinations = make_set(DestinationIP),    // Unique destination IPs
+    UniqueURLs = make_set(RequestURL),               // Unique malicious URLs requested
+    InboundInterfaces = make_set(DeviceInboundInterface)  // Unique inbound interfaces
+    by SourceIP, ApplicationProtocol, SimplifiedDeviceAction
+| project SourceIP, ApplicationProtocol, SimplifiedDeviceAction, MaliciousURLCount, UniqueDestinations, UniqueURLs, InboundInterfaces
+| order by MaliciousURLCount desc
