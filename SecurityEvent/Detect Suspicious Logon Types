@@ -1,0 +1,20 @@
+// List of computers to exclude
+let ExcludedComputers = dynamic(["Compter1", "Computer2"]);
+SecurityEvent
+| where EventID == 4624  // Successful logon event ID
+| where LogonType in (3, 4, 7)  // Unusual logon types: Network, Batch, Unlock
+| where Computer !in (ExcludedComputers)  // Exclude specified computers
+| extend LoginHour = datetime_part('hour', TimeGenerated)  // Extract login hour
+| summarize 
+    FirstLogin = min(TimeGenerated),        // Earliest login time
+    LastLogin = max(TimeGenerated),         // Most recent login time
+    TotalLogins = count(),                  // Total suspicious logins
+    Accounts = make_set(Account),           // Unique accounts involved
+    LogonProcesses = make_set(LogonProcessName),  // Unique logon processes
+    LogonTypes = make_set(LogonTypeName),         // Unique logon types
+    TargetAccounts = make_set(TargetAccount),  
+    TargetDomains = make_set(TargetDomainName)    // Unique target domains
+    by Computer
+| where TotalLogins > 5  // Filter for computers with more than 5 suspicious logins
+| project Computer, FirstLogin, LastLogin, TotalLogins, Accounts, LogonProcesses, LogonTypes, TargetAccounts, TargetDomains
+| order by FirstLogin asc
