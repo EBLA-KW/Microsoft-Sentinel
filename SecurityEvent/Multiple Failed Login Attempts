@@ -1,0 +1,6 @@
+SecurityEvent
+| where EventID == 4625  // Failed login attempt
+| where IPAddress == "specific_ip_address"  // Substitute with the exact IP
+| summarize FailureCount = count() by Computer, Account, FailureReason, bin(TimeGenerated, 5m)
+| where FailureCount > 5
+| order by FailureCount desc
