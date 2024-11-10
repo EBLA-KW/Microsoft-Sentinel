@@ -1,0 +1,24 @@
+// Identify failed VPN logins outside working hours
+let VPNFailures = 
+    CommonSecurityLog
+    | where DeviceVendor == "Fortinet"
+    | where DeviceProduct == "Fortigate"
+    | where Activity contains "vpn fail"
+    | extend LoginHour = datetime_part('hour', TimeGenerated + 3h)  // Adjusting for Kuwait Time (UTC+3)
+    | where LoginHour < 8 or LoginHour > 17
+    | summarize 
+        FirstFailure = min(TimeGenerated),  
+        LastFailure = max(TimeGenerated),   
+        TotalFailures = count(),            
+        Destinations = make_set(DestinationIP),  
+        LoginHours = make_set(LoginHour)         
+        by SourceIP;
+// Cross-reference with Threat Intelligence indicators
+VPNFailures
+| join kind=inner (
+    ThreatIntelligenceIndicator
+    | where Active == true
+    | project ThreatIP = NetworkSourceIP, ThreatDescription = Description, ThreatType = ThreatType, ConfidenceScore = ConfidenceScore
+) on $left.SourceIP == $right.ThreatIP
+| project SourceIP, FirstFailure, LastFailure, TotalFailures, Destinations, LoginHours, ThreatDescription, ThreatType, ConfidenceScore
+| order by ConfidenceScore desc, FirstFailure asc
