@@ -1,0 +1,13 @@
+CommonSecurityLog
+| where DeviceVendor contains "Fortinet"
+| where Activity contains "virus infected"
+| summarize 
+    FirstDetected = min(TimeGenerated),       // Earliest virus event time
+    LastDetected = max(TimeGenerated),        // Latest virus event time
+    TotalVirusEvents = count(),               // Total number of virus-related events
+    ActionsTaken = make_set(DeviceAction),    // Unique actions taken
+    AffectedDestinations = make_set(DestinationIP), // Unique destination IPs affected
+    InfectedFiles = make_set(FileName)        // Unique filenames flagged
+    by SourceIP
+| project SourceIP, FirstDetected, LastDetected, TotalVirusEvents, ActionsTaken, AffectedDestinations, InfectedFiles
+| order by TotalVirusEvents desc
